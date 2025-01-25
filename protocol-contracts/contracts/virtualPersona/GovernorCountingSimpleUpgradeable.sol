@@ -3,7 +3,9 @@
 
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts-upgradeable/governance/GovernorUpgradeable.sol";
+import {GovernorUpgradeable} from "@openzeppelin/contracts-upgradeable/governance/GovernorUpgradeable.sol";
+import {Context} from "@openzeppelin/contracts/utils/Context.sol";
+import {ContextUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
 
 /**
  * @dev Extension of {Governor} for simple, 4 options, vote counting.
@@ -100,34 +102,34 @@ abstract contract GovernorCountingSimpleUpgradeable is GovernorUpgradeable {
     /**
      * @dev See {Governor-_countVote}. In this module, the support follows the `VoteType` enum (from Governor Bravo).
      */
-    function _countVote(
-        uint256 proposalId,
-        address account,
-        uint8 support,
-        uint256 weight,
-        bytes memory // params
-    ) internal virtual override {
-        ProposalVote storage proposalVote = _proposalVotes[proposalId];
+    // function _countVote(
+    //     uint256 proposalId,
+    //     address account,
+    //     uint8 support,
+    //     uint256 weight,
+    //     bytes memory // params
+    // ) internal virtual override {
+    //     ProposalVote storage proposalVote = _proposalVotes[proposalId];
 
-        // Allow user to cast vote with opinion and type "Deliberate" to signal that they are not voting
-        if (support == uint8(VoteType.Deliberate)) {
-            return;
-        }
+    //     // Allow user to cast vote with opinion and type "Deliberate" to signal that they are not voting
+    //     if (support == uint8(VoteType.Deliberate)) {
+    //         return;
+    //     }
 
-        if (proposalVote.hasVoted[account]) {
-            revert GovernorAlreadyCastVote(account);
-        }
+    //     if (proposalVote.hasVoted[account]) {
+    //         revert GovernorAlreadyCastVote(account);
+    //     }
 
-        proposalVote.hasVoted[account] = true;
+    //     proposalVote.hasVoted[account] = true;
 
-        if (support == uint8(VoteType.Against)) {
-            proposalVote.againstVotes += weight;
-        } else if (support == uint8(VoteType.For)) {
-            proposalVote.forVotes += weight;
-        } else if (support == uint8(VoteType.Abstain)) {
-            proposalVote.abstainVotes += weight;
-        } else {
-            revert GovernorInvalidVoteType();
-        }
-    }
+    //     if (support == uint8(VoteType.Against)) {
+    //         proposalVote.againstVotes += weight;
+    //     } else if (support == uint8(VoteType.For)) {
+    //         proposalVote.forVotes += weight;
+    //     } else if (support == uint8(VoteType.Abstain)) {
+    //         proposalVote.abstainVotes += weight;
+    //     } else {
+    //         revert GovernorInvalidVoteType();
+    //     }
+    // }
 }

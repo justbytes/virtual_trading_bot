@@ -80,12 +80,12 @@ abstract contract GovernorCountingSimple is Governor {
         uint8 support,
         uint256 weight,
         bytes memory // params
-    ) internal virtual override {
+    ) internal virtual override returns (uint256){
         ProposalVote storage proposalVote = _proposalVotes[proposalId];
 
         // Allow user to cast vote with opinion and type "Deliberate" to signal that they are not voting
         if(support == uint8(VoteType.Deliberate)) {
-            return;
+            return 0;
         }
 
         if (proposalVote.hasVoted[account]) {

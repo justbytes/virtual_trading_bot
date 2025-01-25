@@ -491,4 +491,8 @@ contract AgentFactoryV2 is
     {
         return ContextUpgradeable._msgData();
     }
+
+    function _contextSuffixLength() internal view virtual override(Context, ContextUpgradeable) returns (uint256) {
+        return ContextUpgradeable._contextSuffixLength();
+    }
 }
