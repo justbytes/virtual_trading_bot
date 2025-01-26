@@ -1,0 +1,37 @@
+[project]
+src = "src"
+out = "out"
+dot_env = ".env"
+save_abi_path = "abis"
+default_network_name = "base-mainnet-fork"
+
+[networks.contracts]
+# Add the virtual factory
+ffactory = {abi = "abis/FFactory.json"}
+virtual_token = {abi = "abis/VirtualToken.json"}
+
+# Add the virtual AgentTokenFactory
+# Add the virtual Router
+# Add weth
+# Add ???
+
+[networks.base-mainnet-fork]
+fork = true
+url = "$BASE_MAINNET_RPC_URL"
+default_account_name = "anvil0"
+unsafe_password_file = "$UNSAFE_PS_FILE"
+
+[networks.base-mainnet-fork.contracts]
+ffactory = { address = "0x158d7CcaA23DC3c8861c3323eD546E3d25e74309" }
+virtual_token = { address = "0x0b3e328455c4059EEb9e3f84b5543F74E24e7E1b" }
+aixbt_agent_token = { address = "0x4F9Fd6Be4a90f2620860d680c0d4d5Fb53d1A825" }
+#agent_token_contract = { address = "0x8f15c3f0e30094C6E92190Ae442DD7BAB840024f" } might not be needed
+# Add the virtual factory
+# Add the virtual AgentToken
+# Add the virtual AgentTokenFactory
+# Add the virtual Router
+# Add weth
+# Add ???
+
+# You can view all configuration options at https://cyfrin.github.io/moccasin/all_moccasin_toml_parameters.html
+
