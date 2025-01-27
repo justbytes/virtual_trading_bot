@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts-upgradeable/governance/extensions/GovernorSettingsUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/governance/extensions/GovernorStorageUpgradeable.sol";
-import  "@openzeppelin/contracts-upgradeable/governance/extensions/GovernorVotesQuorumFractionUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/governance/extensions/GovernorVotesQuorumFractionUpgradeable.sol";
 import {IVotes} from "@openzeppelin/contracts/governance/utils/IVotes.sol";
 import "@openzeppelin/contracts/utils/structs/Checkpoints.sol";
 import {IAgentDAO} from "./IAgentDAO.sol";
@@ -38,13 +38,10 @@ contract AgentDAO is
         _disableInitializers();
     }
 
-    function initialize(
-        string memory name,
-        IVotes token,
-        address agentNft,
-        uint256 threshold,
-        uint32 votingPeriod_
-    ) external initializer {
+    function initialize(string memory name, IVotes token, address agentNft, uint256 threshold, uint32 votingPeriod_)
+        external
+        initializer
+    {
         __Governor_init(name);
         __GovernorSettings_init(0, votingPeriod_, threshold);
         __GovernorCountingSimple_init();
@@ -57,21 +54,11 @@ contract AgentDAO is
 
     // The following functions are overrides required by Solidity.
 
-    function votingDelay()
-        public
-        view
-        override(GovernorUpgradeable, GovernorSettingsUpgradeable)
-        returns (uint256)
-    {
+    function votingDelay() public view override(GovernorUpgradeable, GovernorSettingsUpgradeable) returns (uint256) {
         return super.votingDelay();
     }
 
-    function votingPeriod()
-        public
-        view
-        override(GovernorUpgradeable, GovernorSettingsUpgradeable)
-        returns (uint256)
-    {
+    function votingPeriod() public view override(GovernorUpgradeable, GovernorSettingsUpgradeable) returns (uint256) {
         return super.votingPeriod();
     }
 
@@ -99,15 +86,8 @@ contract AgentDAO is
         uint256 proposerVotes = getVotes(proposer, clock() - 1);
         uint256 votesThreshold = proposalThreshold();
         address contributionNft = IAgentNft(_agentNft).getContributionNft();
-        if (
-            proposerVotes < votesThreshold &&
-            proposer != IContributionNft(contributionNft).getAdmin()
-        ) {
-            revert GovernorInsufficientProposerVotes(
-                proposer,
-                proposerVotes,
-                votesThreshold
-            );
+        if (proposerVotes < votesThreshold && proposer != IContributionNft(contributionNft).getAdmin()) {
+            revert GovernorInsufficientProposerVotes(proposer, proposerVotes, votesThreshold);
         }
 
         return _propose(targets, values, calldatas, description, proposer);
@@ -119,21 +99,11 @@ contract AgentDAO is
         bytes[] memory calldatas,
         string memory description,
         address proposer
-    )
-        internal
-        override(GovernorUpgradeable, GovernorStorageUpgradeable)
-        returns (uint256)
-    {
-        return
-            super._propose(targets, values, calldatas, description, proposer);
+    ) internal override(GovernorUpgradeable, GovernorStorageUpgradeable) returns (uint256) {
+        return super._propose(targets, values, calldatas, description, proposer);
     }
 
-    function proposalCount()
-        public
-        view
-        override(IAgentDAO, GovernorStorageUpgradeable)
-        returns (uint256)
-    {
+    function proposalCount() public view override(IAgentDAO, GovernorStorageUpgradeable) returns (uint256) {
         return super.proposalCount();
     }
 
@@ -141,10 +111,7 @@ contract AgentDAO is
         return _scores[account].latest();
     }
 
-    function getPastScore(
-        address account,
-        uint256 timepoint
-    ) external view returns (uint256) {
+    function getPastScore(address account, uint256 timepoint) external view returns (uint256) {
         uint48 currentTimepoint = clock();
         if (timepoint >= currentTimepoint) {
             revert ERC5805FutureLookup(timepoint, currentTimepoint);
@@ -152,29 +119,18 @@ contract AgentDAO is
         return _scores[account].upperLookupRecent(SafeCast.toUint48(timepoint));
     }
 
-    function _castVote(
-        uint256 proposalId,
-        address account,
-        uint8 support,
-        string memory reason,
-        bytes memory params
-    ) internal override returns (uint256) {
+    function _castVote(uint256 proposalId, address account, uint8 support, string memory reason, bytes memory params)
+        internal
+        override
+        returns (uint256)
+    {
         bool votedPreviously = hasVoted(proposalId, account);
 
-        uint256 weight = super._castVote(
-            proposalId,
-            account,
-            support,
-            reason,
-            params
-        );
+        uint256 weight = super._castVote(proposalId, account, support, reason, params);
 
         if (!votedPreviously && hasVoted(proposalId, account)) {
             ++_totalScore;
-            _scores[account].push(
-                SafeCast.toUint48(block.number),
-                SafeCast.toUint208(scoreOf(account)) + 1
-            );
+            _scores[account].push(SafeCast.toUint48(block.number), SafeCast.toUint208(scoreOf(account)) + 1);
             if (params.length > 0 && support == 1) {
                 _updateMaturity(account, proposalId, weight, params);
             }
@@ -189,20 +145,13 @@ contract AgentDAO is
 
     // Auto execute when forVotes == totalSupply
     function _tryAutoExecute(uint256 proposalId) internal {
-        (, uint256 forVotes, ) = proposalVotes(proposalId);
-        if (
-            forVotes == token().getPastTotalSupply(proposalSnapshot(proposalId))
-        ) {
+        (, uint256 forVotes,) = proposalVotes(proposalId);
+        if (forVotes == token().getPastTotalSupply(proposalSnapshot(proposalId))) {
             execute(proposalId);
         }
     }
 
-    function _updateMaturity(
-        address account,
-        uint256 proposalId,
-        uint256 weight,
-        bytes memory params
-    ) internal {
+    function _updateMaturity(address account, uint256 proposalId, uint256 weight, bytes memory params) internal {
         // Check is this a contribution proposal
         address contributionNft = IAgentNft(_agentNft).getContributionNft();
         address owner = IERC721(contributionNft).ownerOf(proposalId);
@@ -223,39 +172,28 @@ contract AgentDAO is
         emit ValidatorEloRating(proposalId, account, maturity, votes);
     }
 
-    function _calcMaturity(
-        uint256 proposalId,
-        uint8[] memory votes
-    ) internal view returns (uint256) {
+    function _calcMaturity(uint256 proposalId, uint8[] memory votes) internal view returns (uint256) {
         address contributionNft = IAgentNft(_agentNft).getContributionNft();
         address serviceNft = IAgentNft(_agentNft).getServiceNft();
-        uint256 virtualId = IContributionNft(contributionNft).tokenVirtualId(
-            proposalId
-        );
+        uint256 virtualId = IContributionNft(contributionNft).tokenVirtualId(proposalId);
         uint8 core = IContributionNft(contributionNft).getCore(proposalId);
-        uint256 coreService = IServiceNft(serviceNft).getCoreService(
-            virtualId,
-            core
-        );
+        uint256 coreService = IServiceNft(serviceNft).getCoreService(virtualId, core);
         // All services start with 100 maturity
         uint256 maturity = 100;
         if (coreService > 0) {
             maturity = IServiceNft(serviceNft).getMaturity(coreService);
-            maturity = IEloCalculator(IAgentNft(_agentNft).getEloCalculator())
-                .battleElo(maturity, votes);
+            maturity = IEloCalculator(IAgentNft(_agentNft).getEloCalculator()).battleElo(maturity, votes);
         }
 
         return maturity;
     }
 
     function getMaturity(uint256 proposalId) public view returns (uint256) {
-        (, uint256 forVotes, ) = proposalVotes(proposalId);
+        (, uint256 forVotes,) = proposalVotes(proposalId);
         return Math.min(10000, _proposalMaturities[proposalId] / forVotes);
     }
 
-    function quorum(
-        uint256 blockNumber
-    )
+    function quorum(uint256 blockNumber)
         public
         view
         override(GovernorUpgradeable, GovernorVotesQuorumFractionUpgradeable)
@@ -268,17 +206,12 @@ contract AgentDAO is
         return 10000;
     }
 
-    function state(
-        uint256 proposalId
-    ) public view override(GovernorUpgradeable) returns (ProposalState) {
+    function state(uint256 proposalId) public view override(GovernorUpgradeable) returns (ProposalState) {
         // Allow early execution when reached 100% for votes
         ProposalState currentState = super.state(proposalId);
         if (currentState == ProposalState.Active) {
-            (, uint256 forVotes, ) = proposalVotes(proposalId);
-            if (
-                forVotes ==
-                token().getPastTotalSupply(proposalSnapshot(proposalId))
-            ) {
+            (, uint256 forVotes,) = proposalVotes(proposalId);
+            if (forVotes == token().getPastTotalSupply(proposalSnapshot(proposalId))) {
                 return ProposalState.Succeeded;
             }
         }
@@ -292,35 +225,4 @@ contract AgentDAO is
     function _executor() internal view virtual override returns (address) {
         return address(this);
     }
-
-    // function _countVote(
-    //     uint256 proposalId,
-    //     address account,
-    //     uint8 support,
-    //     uint256 weight,
-    //     bytes memory params
-    // ) internal virtual override {
-    //     ProposalVote storage proposalVote = _proposalVotes[proposalId];
-
-    //     // Allow user to cast vote with opinion and type "Deliberate" to signal that they are not voting
-    //     if (support == uint8(VoteType.Deliberate)) {
-    //         return;
-    //     }
-
-    //     if (proposalVote.hasVoted[account]) {
-    //         revert GovernorAlreadyCastVote(account);
-    //     }
-
-    //     proposalVote.hasVoted[account] = true;
-
-    //     if (support == uint8(VoteType.Against)) {
-    //         proposalVote.againstVotes += weight;
-    //     } else if (support == uint8(VoteType.For)) {
-    //         proposalVote.forVotes += weight;
-    //     } else if (support == uint8(VoteType.Abstain)) {
-    //         proposalVote.abstainVotes += weight;
-    //     } else {
-    //         revert GovernorInvalidVoteType();
-    //     }
-    // }
 }

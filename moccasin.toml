@@ -6,17 +6,17 @@ save_abi_path = "abis"
 default_network_name = "base-mainnet-fork"
 
 [networks.contracts]
+# Core
 weth = { abi = "abis/weth.json" }
 
 # Virtual
 ffactory = {abi = "abis/FFactory.json"}
 virtual_token = {abi = "abis/VirtualToken.json"}
+bonding = {abi = "abis/Bonding.json"}
+agent_factory = {abi = "abis/AgentFactoryV3.json"}
+agent_token = {abi = "abis/AgentToken.json"}
+# Uniswap
 uniswap_swap_router = { abi = "abis/uniswap_swap_router.json" }
-
-# Add the virtual AgentTokenFactory
-# Add the virtual Router
-# Add weth
-# Add ???
 
 [networks.base-mainnet-fork]
 fork = true
@@ -25,12 +25,17 @@ default_account_name = "anvil0"
 unsafe_password_file = "$UNSAFE_PS_FILE"
 
 [networks.base-mainnet-fork.contracts]
+# Core
 weth = { address = "0x4200000000000000000000000000000000000006" }
+
+# Virtual
 ffactory = { address = "0x158d7CcaA23DC3c8861c3323eD546E3d25e74309" }
 virtual_token = { address = "0x0b3e328455c4059EEb9e3f84b5543F74E24e7E1b" }
 aixbt_agent_token = { address = "0x4F9Fd6Be4a90f2620860d680c0d4d5Fb53d1A825" }
+bonding = { address = "0xF66DeA7b3e897cD44A5a231c61B6B4423d613259"}
+agent_factory = { address = "0x71B8EFC8BCaD65a5D9386D07f2Dff57ab4EAf533" }
 
-# uniswap
+# Uniswap
 uniswap_swap_router = { address = "0x2626664c2603336E57B271c5C0b26F421741e481" }
 
 #agent_token_contract = { address = "0x8f15c3f0e30094C6E92190Ae442DD7BAB840024f" } might not be needed
