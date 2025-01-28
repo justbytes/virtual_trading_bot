@@ -15,6 +15,9 @@ virtual_token = {abi = "abis/VirtualToken.json"}
 bonding = {abi = "abis/Bonding.json"}
 agent_factory = {abi = "abis/AgentFactoryV3.json"}
 agent_token = {abi = "abis/AgentToken.json"}
+ferc20 = {abi = "abis/FERC20.json"}
+fpair = {abi = "abis/FPair.json"}
+
 # Uniswap
 uniswap_swap_router = { abi = "abis/uniswap_swap_router.json" }
 
@@ -31,9 +34,10 @@ weth = { address = "0x4200000000000000000000000000000000000006" }
 # Virtual
 ffactory = { address = "0x158d7CcaA23DC3c8861c3323eD546E3d25e74309" }
 virtual_token = { address = "0x0b3e328455c4059EEb9e3f84b5543F74E24e7E1b" }
-aixbt_agent_token = { address = "0x4F9Fd6Be4a90f2620860d680c0d4d5Fb53d1A825" }
 bonding = { address = "0xF66DeA7b3e897cD44A5a231c61B6B4423d613259"}
 agent_factory = { address = "0x71B8EFC8BCaD65a5D9386D07f2Dff57ab4EAf533" }
+agent_token = { address = "0x731814e491571A2e9eE3c5b1F7f3b962eE8f4870" }
+ferc20 = { address = "0x2072Ebe65d2Def584551D6b14c629BD0D68FE396" }
 
 # Uniswap
 uniswap_swap_router = { address = "0x2626664c2603336E57B271c5C0b26F421741e481" }
