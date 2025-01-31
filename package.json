@@ -1,0 +1,28 @@
+{
+  "name": "virtual_trading_bot",
+  "version": "1.0.0",
+  "description": "Trading bot for the virtual protocol",
+  "homepage": "https://github.com/justbytes/virtual_trading_bot#readme",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/justbytes/virtual_trading_bot.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/justbytes/virtual_trading_bot/issues"
+  },
+  "scripts": {
+    "start:listeners": "node listeners/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "alchemy-sdk": "^3.5.1",
+    "dotenv": "^16.4.7",
+    "ethers": "^6.13.5"
+  }
+}
