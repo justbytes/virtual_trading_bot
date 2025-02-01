@@ -1,3 +1,4 @@
+require("dotenv").config();
 const fetch = require("node-fetch");
 const { Alchemy } = require("alchemy-sdk");
 const { ethers } = require("ethers");
@@ -9,6 +10,7 @@ const {
   FFACTORY_ADDRESS,
   FFACTORY_INTERFACE,
   FPAIR_INTERFACE,
+  VIRTUAL_TOKEN_ADDRESS,
 } = require("./utils/config");
 
 // Import helper functions
@@ -109,6 +111,12 @@ class App {
     // Get agent info from bonding contract
     agent = await agentTokenInfo(tokenAddress);
 
+    if (!agent) {
+      console.log("Agent not found");
+      this.unhandledAgents.set(pair, tokenAddress);
+      return;
+    }
+
     // If the agent is trading on uniswap, add it to the sentients list
     if (agent.tradingOnUniswap) {
       this.addSentient(agent);
@@ -120,7 +128,7 @@ class App {
     const virtualPrice = await this.getVirtualTokenPrice();
     const normalizedMarketCap =
       (agent.data.marketCap / 10 ** 18) * virtualPrice;
-
+    console.log("Normalized market cap: ", normalizedMarketCap);
     if (normalizedMarketCap < 30000) {
       // Get current price set target price (increase of 20%) and buy
       const currentPrice = agent.data.price;
@@ -134,7 +142,7 @@ class App {
       // Buy the token
       this.buyToken(agent.token, targetPrice, stopLoss);
     } else {
-      console.log("Market cap is too high");
+      console.log("Market cap is too high", normalizedMarketCap);
     }
   }
 
@@ -150,6 +158,7 @@ class App {
   // }
 
   async getVirtualTokenPrice() {
+    // Request parameters
     const options = {
       method: "POST",
       headers: {
@@ -166,12 +175,14 @@ class App {
       }),
     };
 
+    // Alchemy API get price by token address endpoint
     const response = await fetch(
-      `https://api.g.alchemy.com/prices/v1/${process.env.ALCHEMY_API_KEY}/tokens/by-address`,
+      `https://api.g.alchemy.com/prices/v1/${process.env.ALCHEMY_KEY}/tokens/by-address`,
       options
     );
     const data = await response.json();
-    return data.data[0].price;
+
+    return data.data[0].prices[0].value;
   }
 
   async getAllPairsLength() {
