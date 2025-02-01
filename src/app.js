@@ -24,7 +24,7 @@ const {
 const {
   activateTargetPriceListener,
   activateLaunchedListener,
-} = require("./listeners");
+} = require("./scripts/listeners");
 
 class App {
   constructor() {
