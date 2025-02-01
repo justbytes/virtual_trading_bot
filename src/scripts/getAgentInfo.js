@@ -48,10 +48,14 @@ const agentTokenInfo = async (tokenAddress) => {
 
   agent = await getTokenInfo(tokenAddress);
 
-  // Make sure the price and marketCap are not 0
-  if (agent.data.price == 0 || agent.data.marketCap == 0) {
-    let attempts = 0;
+  if (!agent) {
+    return false;
+  }
+
+  // There should be no 0 priced tokens
+  if (agent.data.price == 0) {
     const maxAttempts = 10; // Maximum number of retry attempts
+    let attempts = 0; // Counter for the number of attempts
 
     while (
       (agent.data.price == 0 || agent.data.marketCap == 0) &&
@@ -62,54 +66,13 @@ const agentTokenInfo = async (tokenAddress) => {
       attempts++;
     }
 
-    if (agent.data.price == 0 || agent.data.marketCap == 0) {
-      console.log(
-        `Failed to get non-zero price/marketCap after ${maxAttempts} attempts\n Price: ${agent.data.price}\n MarketCap: ${agent.data.marketCap}`
-      );
-      return;
+    if (agent.data.price == 0) {
+      console.log(`Failed to get non-zero price after ${maxAttempts} attempts`);
+      return false;
     }
   }
 
   return agent;
-};
-
-const getTokenInfo = async (targetAddress) => {
-  const bonding = new ethers.Contract(
-    BONDING_ADDRESS,
-    BONDING_INTERFACE,
-    await alchemy.config.getProvider()
-  );
-
-  const tokenInfo = await retryOperation(
-    async () => bonding.tokenInfo(targetAddress),
-    `Error getting token info`
-  );
-
-  if (tokenInfo.data.price === 0) {
-    console.log("Token price is 0");
-    tokenInfo = await getAgentInfo(targetAddress);
-  }
-
-  return formatTokenData(tokenInfo);
-};
-
-const retryOperation = async (operation, errorMessage, maxRetries = 5) => {
-  let retry = 0;
-  while (retry < maxRetries) {
-    try {
-      return await operation();
-    } catch (error) {
-      retry++;
-      console.log(`${errorMessage} (attempt ${retry}/${maxRetries})`);
-      if (retry === maxRetries) {
-        throw new Error(`${errorMessage} after ${maxRetries} attempts`);
-      }
-      // Exponential backoff
-      await new Promise((resolve) =>
-        setTimeout(resolve, Math.pow(2, retry) * 1000)
-      );
-    }
-  }
 };
 
 const getAgentInfoFromPair = async (pairAddress) => {
@@ -140,6 +103,45 @@ const getAgentInfoFromPair = async (pairAddress) => {
       : tokenA;
 
   return getAgentInfo(ferc20);
+};
+
+const getTokenInfo = async (targetAddress) => {
+  const bonding = new ethers.Contract(
+    BONDING_ADDRESS,
+    BONDING_INTERFACE,
+    await alchemy.config.getProvider()
+  );
+
+  const rawTokenData = await retryOperation(
+    async () => bonding.tokenInfo(targetAddress),
+    `Error getting token info`
+  );
+
+  if (!rawTokenData) {
+    return false;
+  }
+
+  return formatTokenData(rawTokenData);
+};
+
+const retryOperation = async (operation, errorMessage, maxRetries = 5) => {
+  let retry = 0;
+  while (retry < maxRetries) {
+    try {
+      return await operation();
+    } catch (error) {
+      retry++;
+      console.log(`${errorMessage} (attempt ${retry}/${maxRetries})`);
+      if (retry === maxRetries) {
+        console.log(`${errorMessage} after ${maxRetries} attempts`);
+        return false;
+      }
+      // Exponential backoff
+      await new Promise((resolve) =>
+        setTimeout(resolve, Math.pow(2, retry) * 1000)
+      );
+    }
+  }
 };
 
 module.exports = { agentTokenInfo, getTokenInfo, getAgentInfoFromPair };

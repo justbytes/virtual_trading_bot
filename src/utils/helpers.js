@@ -2,7 +2,7 @@ const fs = require("fs");
 const ethers = require("ethers");
 const { Alchemy } = require("alchemy-sdk");
 
-const { getAgentInfo } = require("../scripts/getAgentInfo");
+const { getTokenInfo } = require("../scripts/getAgentInfo");
 
 const {
   BASE_MAINNET,
@@ -143,7 +143,7 @@ async function updateAgentLists(app, initalPairs, pairsLength) {
         ferc20 = tokenA;
       }
 
-      const tokenInfo = await getAgentInfo(ferc20);
+      const tokenInfo = await getTokenInfo(ferc20);
 
       if (tokenInfo.tradingOnUniswap) {
         app.addPair(pairAddress);

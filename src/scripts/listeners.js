@@ -14,48 +14,48 @@ const {
 const alchemy = new Alchemy(BASE_MAINNET);
 
 // ** SOON TO BE IMPLEMENTED **
-// const prototypeMCListener = async (app, pairAddress, tokenAddress) => {
-//   const filter = {
-//     address: pairAddress,
-//     topics: [FPAIR_INTERFACE.getEvent("Swap").topicHash],
-//   };
+const prototypeMCListener = async (app, pairAddress, tokenAddress) => {
+  const filter = {
+    address: pairAddress,
+    topics: [FPAIR_INTERFACE.getEvent("Swap").topicHash],
+  };
 
-//   const listener = async (log) => {
-//     const pairContract = new ethers.Contract(
-//       pairAddress,
-//       FPAIR_INTERFACE,
-//       await alchemy.config.provider()
-//     );
+  const listener = async (log) => {
+    const pairContract = new ethers.Contract(
+      pairAddress,
+      FPAIR_INTERFACE,
+      await alchemy.config.provider()
+    );
 
-//     const bondingContract = new ethers.Contract(
-//       BONDING_ADDRESS,
-//       BONDING_INTERFACE,
-//       await alchemy.config.provider()
-//     );
+    const bondingContract = new ethers.Contract(
+      BONDING_ADDRESS,
+      BONDING_INTERFACE,
+      await alchemy.config.provider()
+    );
 
-//     const tokenInfo = await getAgentInfo(tokenAddress);
+    const tokenInfo = await getAgentInfo(tokenAddress);
 
-//     const reserves = pairContract.getReserves();
-//     const grad_threshold = bondingContract.gradThreshold();
+    const reserves = pairContract.getReserves();
+    const grad_threshold = bondingContract.gradThreshold();
 
-//     const initial_supply = tokenInfo.data.supply;
-//     const total_needed_reduction = initial_supply - grad_threshold;
-//     const current_reduction = initial_supply - reserves[0];
+    const initial_supply = tokenInfo.data.supply;
+    const total_needed_reduction = initial_supply - grad_threshold;
+    const current_reduction = initial_supply - reserves[0];
 
-//     const progress_to_goal = (current_reduction / total_needed_reduction) * 100;
+    const progress_to_goal = (current_reduction / total_needed_reduction) * 100;
 
-//     if (progress_to_goal >= 95) {
-//       console.log("Token is 95% to graduation");
-//       const targetPrice = tokenInfo.data.price * 1.2;
-//       app.buyToken(tokenAddress, targetPrice);
-//       alchemy.ws.off(filter, listener);
-//     } else {
-//       console.log("Progress to goal: ", progress_to_goal);
-//     }
-//   };
+    if (progress_to_goal >= 95) {
+      console.log("Token is 95% to graduation");
+      const targetPrice = tokenInfo.data.price * 1.2;
+      app.buyToken(tokenAddress, targetPrice);
+      alchemy.ws.off(filter, listener);
+    } else {
+      console.log("Progress to goal: ", progress_to_goal);
+    }
+  };
 
-//   alchemy.ws.on(filter, listener);
-// };
+  alchemy.ws.on(filter, listener);
+};
 
 const activateTargetPriceListener = (
   app,
@@ -65,16 +65,25 @@ const activateTargetPriceListener = (
 ) => {
   console.log("Activating target price listener");
   const filter = {
-    address: tokenAddress,
-    topics: [FERC20_INTERFACE.getEvent("Transfer").topicHash],
+    address: pairAddress,
+    topics: [FPAIR_INTERFACE.getEvent("Swap").topicHash],
   };
 
   const listener = async (log) => {
     let tokenInfo;
-    // const decoded = FERC20_INTERFACE.parseLog(log);
-    //const { recipient, amount } = decoded.args;
+    // const decoded = FPAIR_INTERFACE.parseLog(log);
+    // const { amount0In, amount0Out, amount1In, amount1Out } = decoded.args;
 
     tokenInfo = await agentTokenInfo(tokenAddress);
+
+    if (!tokenInfo) {
+      console.log(
+        "There was an error getting the token info on the target price listener.\n Closing current position"
+      );
+      app.sellToken(tokenAddress);
+      alchemy.ws.off(filter, listener);
+      return;
+    }
 
     console.log("");
     console.log("--------------- Token Transferred -----------------");
@@ -94,6 +103,13 @@ const activateTargetPriceListener = (
       app.sellToken(tokenAddress);
       alchemy.ws.off(filter, listener);
       console.log("Target price listener removed");
+    } else if (tokenInfo.data.price < stopLoss) {
+      console.log("Stop loss hit!");
+      app.sellToken(tokenAddress);
+      alchemy.ws.off(filter, listener);
+      console.log("Target price listener removed");
+    } else {
+      console.log("Price target not hit, waiting for price to reach target");
     }
   };
 
