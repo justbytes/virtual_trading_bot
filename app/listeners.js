@@ -1,6 +1,6 @@
 const { Alchemy } = require("alchemy-sdk");
 const ethers = require("ethers");
-const { getAgentInfo } = require("./utils/helpers");
+const { agentTokenInfo } = require("./scripts/getAgentInfo");
 
 const {
   BASE_MAINNET,
@@ -57,7 +57,12 @@ const alchemy = new Alchemy(BASE_MAINNET);
 //   alchemy.ws.on(filter, listener);
 // };
 
-const activateTargetPriceListener = (app, targetPrice, tokenAddress) => {
+const activateTargetPriceListener = (
+  app,
+  targetPrice,
+  tokenAddress,
+  stopLoss
+) => {
   console.log("Activating target price listener");
   const filter = {
     address: tokenAddress,
@@ -65,21 +70,31 @@ const activateTargetPriceListener = (app, targetPrice, tokenAddress) => {
   };
 
   const listener = async (log) => {
-    console.log("Token Transferred");
+    let tokenInfo;
     // const decoded = FERC20_INTERFACE.parseLog(log);
     //const { recipient, amount } = decoded.args;
 
-    const tokenInfo = await getAgentInfo(tokenAddress);
+    tokenInfo = await agentTokenInfo(tokenAddress);
+
+    console.log("");
+    console.log("--------------- Token Transferred -----------------");
+    console.log("Token: ", tokenAddress);
+    console.log(
+      Number(targetPrice) - Number(tokenInfo.data.price),
+      "difference"
+    );
+    console.log("Target price: ", targetPrice);
+    console.log("Current price: ", tokenInfo.data.price);
+    console.log("Stop loss: ", stopLoss);
+    console.log("---------------------------------------------------");
+    console.log("");
 
     if (tokenInfo.data.price >= targetPrice) {
       console.log("Price target hit!");
-
       app.sellToken(tokenAddress);
-      // Remove this specific listener when target price is reached
       alchemy.ws.off(filter, listener);
       console.log("Target price listener removed");
     }
-    console.log("Token price has not reached target price");
   };
 
   alchemy.ws.on(filter, listener);
@@ -98,15 +113,16 @@ const activateLaunchedListener = async (app) => {
   alchemy.ws.on(filter, async (log) => {
     const decoded = BONDING_INTERFACE.parseLog(log);
     const { token, pair, n } = decoded.args;
+
+    console.log("");
     console.log("--------------------------------");
     console.log("LAUNCHED EVENT TRIGGERED");
     console.log("Token: ", token);
     console.log("Pair: ", pair);
-    console.log("n: ", n);
     console.log("--------------------------------");
     console.log("");
 
-    await app.handleLaunchedAgent(pair);
+    await app.handleLaunchedAgent(pair, token);
   });
 };
 

@@ -1,12 +1,14 @@
+const fetch = require("node-fetch");
 const { Alchemy } = require("alchemy-sdk");
 const { ethers } = require("ethers");
-const { getAgentInfoFromPair } = require("./scripts/getAgentInfo");
+const { agentTokenInfo } = require("./scripts/getAgentInfo");
 
 // Enviorment settings
 const {
   BASE_MAINNET,
   FFACTORY_ADDRESS,
   FFACTORY_INTERFACE,
+  FPAIR_INTERFACE,
 } = require("./utils/config");
 
 // Import helper functions
@@ -24,6 +26,7 @@ const {
 
 class App {
   constructor() {
+    this.unhandledAgents = new Map();
     this.activeTrades = new Map();
     this.pairs = new Map();
     this.prototypes = new Map();
@@ -50,7 +53,7 @@ class App {
     }
 
     activateLaunchedListener(this);
-    // TODO: Activate a listener for each prototype that checks the market cap after a transfer / swap
+    // TODO: Activate a listener for each prototype that checks the market cap after a transfer / swap to find 95%+ tokens
     this.autoSave();
     return this;
   }
@@ -79,39 +82,60 @@ class App {
 
     // Remove the token from the active trades
     this.activeTrades.delete(tokenAddress);
-    console.log("|Selling|Active trades: ", this.activeTrades.size);
+    console.log("| Selling |Active trades: ", this.activeTrades.size);
   }
 
-  buyToken(tokenAddress, targetPrice) {
+  buyToken(tokenAddress, targetPrice, stopLoss) {
     console.log("Buying token");
     // TODO: run the mox run buy python script
 
     // Set the target price listener
-    activateTargetPriceListener(this, targetPrice, tokenAddress);
-    // Add the token to the active trades
-    this.activeTrades.set(tokenAddress, targetPrice);
-    console.log("|Buying|Active trades: ", this.activeTrades.size);
+    activateTargetPriceListener(this, targetPrice, tokenAddress, stopLoss);
+
+    // Add to active trades Map
+    this.activeTrades.set(tokenAddress, {
+      target: targetPrice,
+      stopLoss: stopLoss,
+    });
+    console.log("| Buying |Active trades: ", this.activeTrades.size);
   }
 
-  async handleLaunchedAgent(pair) {
-    console.log("Adding new agent to list");
-    this.addPair(pair);
-    const agent = await getAgentInfoFromPair(pair);
+  async handleLaunchedAgent(pair, tokenAddress) {
+    let agent;
 
+    // Add pair to the pairs map
+    this.addPair(pair);
+
+    // Get agent info from bonding contract
+    agent = await agentTokenInfo(tokenAddress);
+
+    // If the agent is trading on uniswap, add it to the sentients list
     if (agent.tradingOnUniswap) {
       this.addSentient(agent);
-      return;
     } else {
       this.addPrototype(agent);
     }
 
-    // Get current price set target price (increase of 20%) and buy
-    const currentPrice = agent.data.price;
-    const targetPrice = currentPrice * 1.2; // 20% increase
+    // Get current price of virtual token
+    const virtualPrice = await this.getVirtualTokenPrice();
+    const normalizedMarketCap =
+      (agent.data.marketCap / 10 ** 18) * virtualPrice;
 
-    console.log("Target price: ", targetPrice);
-    // Buy the token
-    this.buyToken(agent.token, targetPrice);
+    if (normalizedMarketCap < 30000) {
+      // Get current price set target price (increase of 20%) and buy
+      const currentPrice = agent.data.price;
+      const targetPrice = currentPrice + currentPrice * 0.2; // 20% increase
+      const stopLoss = currentPrice - currentPrice * 0.51; // 49% decrease
+
+      console.log("Target price: ", targetPrice);
+      console.log("Current price: ", currentPrice);
+      console.log("Stop loss: ", stopLoss);
+
+      // Buy the token
+      this.buyToken(agent.token, targetPrice, stopLoss);
+    } else {
+      console.log("Market cap is too high");
+    }
   }
 
   // ** SOON TO BE IMPLEMENTED **
@@ -125,13 +149,42 @@ class App {
   //   // TODO: Set a listener to sell on uniswap when the token reaches a target price (20% increase)
   // }
 
-  async getAllPairsLength() {
-    const factory = new ethers.Contract(
-      FFACTORY_ADDRESS,
-      FFACTORY_INTERFACE,
-      await this.alchemy.config.getProvider()
+  async getVirtualTokenPrice() {
+    const options = {
+      method: "POST",
+      headers: {
+        accept: "application/json",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        addresses: [
+          {
+            network: "base-mainnet",
+            address: VIRTUAL_TOKEN_ADDRESS,
+          },
+        ],
+      }),
+    };
+
+    const response = await fetch(
+      `https://api.g.alchemy.com/prices/v1/${process.env.ALCHEMY_API_KEY}/tokens/by-address`,
+      options
     );
-    return await factory.allPairsLength();
+    const data = await response.json();
+    return data.data[0].price;
+  }
+
+  async getAllPairsLength() {
+    try {
+      const factory = new ethers.Contract(
+        FFACTORY_ADDRESS,
+        FFACTORY_INTERFACE,
+        await this.alchemy.config.getProvider()
+      );
+      return await factory.allPairsLength();
+    } catch (error) {
+      throw new Error("| App.js | Error getting all pairs length\n", error);
+    }
   }
 
   addPair(pair) {
