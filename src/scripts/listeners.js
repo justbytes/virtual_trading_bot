@@ -1,6 +1,6 @@
 const { Alchemy } = require("alchemy-sdk");
 const ethers = require("ethers");
-const { agentTokenInfo } = require("./scripts/getAgentInfo");
+const { agentTokenInfo } = require("./getAgentInfo");
 
 const {
   BASE_MAINNET,
@@ -8,7 +8,7 @@ const {
   BONDING_INTERFACE,
   FERC20_INTERFACE,
   FPAIR_INTERFACE,
-} = require("./utils/config");
+} = require("../utils/config");
 
 // Set the alchemy provider to the Base mainnet
 const alchemy = new Alchemy(BASE_MAINNET);

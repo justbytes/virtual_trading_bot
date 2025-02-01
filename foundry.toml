@@ -1,6 +1,20 @@
 [profile.default]
-src = "src"
-out = "out"
-libs = ["node_modules"]
+src = "foundry/src"
+out = "foundry/out"
+libs = ["lib"]
+test = "foundry/test"
+script = "foundry/script"
+cache_path = "foundry/cache"
+broadcast = "foundry/broadcast"
+artifact_path = "foundry/artifacts"
 
+# Networks
+fork_url = "${BASE_MAINNET_URL}"
+
+solc_version = "0.8.20"
+
+remappings = [
+    "@openzeppelin/contracts=lib/openzeppelin-contracts/contracts/",
+    "@openzeppelin/contracts-upgradeable=lib/openzeppelin-contracts-upgradeable/contracts/",
+]
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
