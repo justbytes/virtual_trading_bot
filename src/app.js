@@ -87,12 +87,18 @@ class App {
     console.log("| Selling |Active trades: ", this.activeTrades.size);
   }
 
-  buyToken(tokenAddress, targetPrice, stopLoss) {
+  buyToken(tokenAddress, pairAddress, targetPrice, stopLoss) {
     console.log("Buying token");
     // TODO: run the mox run buy python script
 
     // Set the target price listener
-    activateTargetPriceListener(this, targetPrice, tokenAddress, stopLoss);
+    activateTargetPriceListener(
+      this,
+      targetPrice,
+      pairAddress,
+      tokenAddress,
+      stopLoss
+    );
 
     // Add to active trades Map
     this.activeTrades.set(tokenAddress, {
@@ -102,18 +108,18 @@ class App {
     console.log("| Buying |Active trades: ", this.activeTrades.size);
   }
 
-  async handleLaunchedAgent(pair, tokenAddress) {
+  async handleLaunchedAgent(pairAddress, tokenAddress) {
     let agent;
 
     // Add pair to the pairs map
-    this.addPair(pair);
+    this.addPair(pairAddress);
 
     // Get agent info from bonding contract
     agent = await agentTokenInfo(tokenAddress);
 
     if (!agent) {
       console.log("Agent not found");
-      this.unhandledAgents.set(pair, tokenAddress);
+      this.unhandledAgents.set(pairAddress, tokenAddress);
       return;
     }
 
@@ -132,15 +138,15 @@ class App {
     if (normalizedMarketCap < 30000) {
       // Get current price set target price (increase of 20%) and buy
       const currentPrice = agent.data.price;
-      const targetPrice = currentPrice + currentPrice * 0.2; // 20% increase
-      const stopLoss = currentPrice - currentPrice * 0.51; // 49% decrease
+      const targetPrice = currentPrice * 1.1; // 10% increase
+      const stopLoss = currentPrice - currentPrice * 0.6; // 60% decrease
 
       console.log("Target price: ", targetPrice);
       console.log("Current price: ", currentPrice);
       console.log("Stop loss: ", stopLoss);
 
       // Buy the token
-      this.buyToken(agent.token, targetPrice, stopLoss);
+      this.buyToken(tokenAddress, pairAddress, targetPrice, stopLoss);
     } else {
       console.log("Market cap is too high", normalizedMarketCap);
     }

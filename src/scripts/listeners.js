@@ -60,6 +60,7 @@ const prototypeMCListener = async (app, pairAddress, tokenAddress) => {
 const activateTargetPriceListener = (
   app,
   targetPrice,
+  pairAddress,
   tokenAddress,
   stopLoss
 ) => {
