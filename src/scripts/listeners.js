@@ -87,7 +87,7 @@ const activateTargetPriceListener = (
     }
 
     console.log("");
-    console.log("--------------- Token Transferred -----------------");
+    console.log("--------------- Token Swapped -----------------");
     console.log("Token: ", tokenAddress);
     console.log(
       Number(targetPrice) - Number(tokenInfo.data.price),
