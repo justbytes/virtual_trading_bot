@@ -2,9 +2,9 @@
 pragma solidity ^0.8.20;
 
 import {Script} from "forge-std/Script.sol";
-import {FRouter} from "../src/FRouter.sol";
-import {Bonding} from "../src/Bonding.sol";
-import {VirtualToken} from "../src/Virtual.sol";
+import {FRouter} from "../src/virt_contracts/FRouter.sol";
+import {Bonding} from "../src/virt_contracts/Bonding.sol";
+import {VirtualToken} from "../src/virt_contracts/Virtual.sol";
 
 contract HelperConfig is Script {
     NetworkConfig public activeNetworkConfig;
@@ -32,16 +32,16 @@ contract HelperConfig is Script {
             virtualTokenAddress: 0x0b3e328455c4059EEb9e3f84b5543F74E24e7E1b,
             bondingAddress: 0xF66DeA7b3e897cD44A5a231c61B6B4423d613259,
             frouterAddress: 0x83358384D0C96DB98dca34b9c0527f567CEEE5e9,
-            deployerKey: vm.envUint("PRIVATE_KEY")
+            deployerKey: vm.envUint("VIRT_KEY_ADDRESS")
         });
     }
 
-    function getOrCreateAnvilConfig() public pure returns (NetworkConfig memory) {
+    function getOrCreateAnvilConfig() public view returns (NetworkConfig memory) {
         return NetworkConfig({
             virtualTokenAddress: 0x0b3e328455c4059EEb9e3f84b5543F74E24e7E1b,
             bondingAddress: 0xF66DeA7b3e897cD44A5a231c61B6B4423d613259,
             frouterAddress: 0x83358384D0C96DB98dca34b9c0527f567CEEE5e9,
-            deployerKey: ANVIL_PRIVATE_KEY
+            deployerKey: vm.envUint("ANVIL_KEY_ADDRESS")
         });
     }
 }
