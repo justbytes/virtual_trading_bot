@@ -18,12 +18,16 @@ contract HelperConfig is Script {
     }
 
     constructor() {
-        if (block.chainid == 8453) {
-            activeNetworkConfig = getBaseMainnetConfig();
-        } else {
-            activeNetworkConfig = getOrCreateAnvilConfig();
-        }
+        activeNetworkConfig = getBaseMainnetConfig();
     }
+
+    // constructor() {
+    //     if (block.chainid == 8453) {
+    //         activeNetworkConfig = getBaseMainnetConfig();
+    //     } else {
+    //         activeNetworkConfig = getOrCreateAnvilConfig();
+    //     }
+    // }
 
     function getBaseMainnetConfig() public view returns (NetworkConfig memory) {
         return NetworkConfig({
