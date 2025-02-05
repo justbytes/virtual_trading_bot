@@ -28,7 +28,6 @@ contract VirtualTraderTests is Test {
     uint256 public constant INITIAL_BALANCE = 100 ether;
 
     function setUp() public {
-        // Deploy contracts
         deployer = new DeployVirtualTrader();
         (virtualTrader, config) = deployer.run();
 
@@ -37,11 +36,9 @@ contract VirtualTraderTests is Test {
         (virtualToken, bondingAddress, frouterAddress,) = config.activeNetworkConfig();
 
         ERC20Mock(WETH_ADDRESS).mint(address(owner), INITIAL_BALANCE);
-        // VirtualToken(virtualToken).mint(address(owner), INITIAL_BALANCE);
+
         deal(WETH_ADDRESS, owner, INITIAL_BALANCE);
         deal(virtualToken, owner, INITIAL_BALANCE);
-        console2.log("Owner WETH balance:", IERC20(WETH_ADDRESS).balanceOf(owner));
-        console2.log("Owner Virtual balance:", IERC20(virtualToken).balanceOf(owner));
     }
 
     // /////////////////
@@ -55,64 +52,122 @@ contract VirtualTraderTests is Test {
         vm.stopPrank();
     }
 
-    // function test_VirtualTraderCanSwapVirtualTokenForPrototypeToken() public {
-    //     uint256 amountIn = 10 ether;
+    modifier fundContract() {
+        vm.startPrank(owner);
+        IERC20(virtualToken).transfer(address(virtualTrader), 10 ether);
+        IERC20(WETH_ADDRESS).transfer(address(virtualTrader), 10 ether);
+        vm.stopPrank();
 
-    //     // First, user sends virtual tokens to the VirtualTrader contract
-    //     vm.startPrank(owner);
-    //     IERC20(virtualToken).transfer(address(virtualTrader), amountIn);
-    //     IERC20(WETH_ADDRESS).transfer(address(virtualTrader), amountIn);
-    //     vm.stopPrank();
-    //     // Record initial balances
-    //     uint256 initialTarrifBalance = virtualTrader.getBalance(TARRIF_TOKEN);
-    //     uint256 initialVirtualBalance = virtualTrader.getBalance(virtualToken);
-    //     uint256 initialWethBalance = virtualTrader.getBalance(WETH_ADDRESS);
+        uint256 initialVirtualBalance = virtualTrader.getBalance(virtualToken);
+        uint256 initialWethBalance = virtualTrader.getBalance(WETH_ADDRESS);
 
-    //     console2.log("VirtualTrader Tarrif balance:", initialTarrifBalance);
-    //     console2.log("VirtualTrader Virtual balance:", initialVirtualBalance);
-    //     console2.log("VirtualTrader WETH balance:", initialWethBalance);
+        _;
+    }
 
-    //     vm.startPrank(owner);
-    //     virtualTrader.buy(TARRIF_TOKEN, amountIn);
-    //     vm.stopPrank();
+    function test_VirtualTraderCanBuyPrototypeToken() public fundContract {
+        uint256 amountIn = 1 ether;
 
-    //     // Verify balances changed
-    //     assertTrue(IERC20(TARRIF_TOKEN).balanceOf(owner) > initialTarrifBalance, "Owner should receive Tarrif tokens");
-    //     assertEq(virtualTrader.getBalance(virtualToken), 0, "Contract should have spent all Virtual tokens");
-    // }
+        // Record initial balances
+        uint256 initialTarrifBalance = virtualTrader.getBalance(TARRIF_TOKEN);
+
+        console2.log("VirtualTrader Tarrif balance:", initialTarrifBalance);
+
+        vm.startPrank(owner);
+        IERC20(virtualToken).approve(address(virtualTrader), amountIn);
+        virtualTrader.buy(TARRIF_TOKEN, amountIn);
+        vm.stopPrank();
+        // Verify balances changed
+        assert(virtualTrader.getBalance(TARRIF_TOKEN) > initialTarrifBalance);
+        console2.log("VirtualTrader Tarrif balance:", virtualTrader.getBalance(TARRIF_TOKEN));
+    }
 
     // /////////////////
     // // Sell Function Tests
     // /////////////////
 
-    // function test_SellOnlyOwner() public {
-    //     vm.startPrank(user);
-    //     vm.expectRevert();
-    //     virtualTrader.sell(TARRIF_TOKEN, 1 ether);
-    //     vm.stopPrank();
-    // }
+    function test_OnlyOwnerCanUseVirtualTraderSell() public {
+        vm.startPrank(user);
+        vm.expectRevert(VirtualTrader.VirtualTrader__OnlyOwnerCanCallThisFunction.selector);
+        virtualTrader.sell(TARRIF_TOKEN, 1 ether);
+        vm.stopPrank();
+    }
 
-    // function test_SellSuccess() public {
-    //     uint256 amountIn = 1 ether;
+    function test_VirtualTraderCanSellPrototypeTokenWithoutVirtualTokenWithdraw() public fundContract {
+        uint256 virtualTokenIn = 1 ether;
 
-    //     // First buy some tokens to sell
-    //     vm.startPrank(owner);
-    //     IERC20(virtualToken).approve(address(virtualTrader), amountIn);
-    //     virtualTrader.buy(TARRIF_TOKEN, amountIn);
+        vm.startPrank(owner);
+        IERC20(virtualToken).approve(address(virtualTrader), virtualTokenIn);
+        virtualTrader.buy(TARRIF_TOKEN, virtualTokenIn);
+        uint256 virtualBalanceAfterBuy = virtualTrader.getBalance(virtualToken);
+        uint256 tarrifBalance = virtualTrader.getBalance(TARRIF_TOKEN);
+        virtualTrader.sell(TARRIF_TOKEN, tarrifBalance);
+        vm.stopPrank();
 
-    //     // Setup approvals for sell
-    //     IERC20(TARRIF_TOKEN).approve(address(virtualTrader), amountIn);
+        assert(virtualTrader.getBalance(TARRIF_TOKEN) == 0);
+        assert(virtualTrader.getBalance(virtualToken) > virtualBalanceAfterBuy);
+    }
 
-    //     // Record initial balances
-    //     uint256 initialTarrifBalance = IERC20(TARRIF_TOKEN).balanceOf(owner);
-    //     uint256 initialVirtualBalance = IERC20(virtualToken).balanceOf(owner);
+    function test_VirtualTraderCanSellPrototypeTokenAndWithdrawExtraVirtualToken() public {
+        vm.startPrank(owner);
 
-    //     // Execute sell
-    //     virtualTrader.sell(TARRIF_TOKEN, amountIn);
-    //     vm.stopPrank();
+        IERC20(virtualToken).transfer(address(virtualTrader), 55 ether);
+        IERC20(WETH_ADDRESS).transfer(address(virtualTrader), 10 ether);
+        vm.stopPrank();
 
-    //     // Verify balances changed
-    //     assertTrue(IERC20(TARRIF_TOKEN).balanceOf(owner) < initialTarrifBalance);
-    //     assertTrue(IERC20(virtualToken).balanceOf(owner) > initialVirtualBalance);
-    // }
+        uint256 virtualTokenIn = 1 ether;
+        uint256 initialVirtualBalance = IERC20(virtualToken).balanceOf(owner);
+
+        vm.startPrank(owner);
+        IERC20(virtualToken).approve(address(virtualTrader), virtualTokenIn);
+        virtualTrader.buy(TARRIF_TOKEN, virtualTokenIn);
+
+        uint256 tarrifBalance = virtualTrader.getBalance(TARRIF_TOKEN);
+        virtualTrader.sell(TARRIF_TOKEN, tarrifBalance);
+        vm.stopPrank();
+
+        assert(virtualTrader.getBalance(TARRIF_TOKEN) == 0);
+        assert(virtualTrader.getBalance(virtualToken) <= 50 ether);
+        assert(IERC20(virtualToken).balanceOf(owner) > initialVirtualBalance);
+    }
+
+    function test_WithdrawNativeToken() public {
+        // Fund contract with native token (ETH/BASE)
+        vm.deal(address(virtualTrader), 1 ether);
+        uint256 initialOwnerBalance = owner.balance;
+
+        vm.prank(owner);
+        virtualTrader.withdraw();
+
+        assertEq(address(virtualTrader).balance, 0);
+        assertEq(owner.balance, initialOwnerBalance + 1 ether);
+    }
+
+    function test_OnlyOwnerCanWithdrawNativeToken() public {
+        vm.deal(address(virtualTrader), 1 ether);
+
+        vm.prank(user);
+        vm.expectRevert(VirtualTrader.VirtualTrader__OnlyOwnerCanCallThisFunction.selector);
+        virtualTrader.withdraw();
+    }
+
+    function test_WithdrawSpecificToken() public {
+        // Fund contract with some ERC20 token
+        vm.startPrank(owner);
+        IERC20(WETH_ADDRESS).transfer(address(virtualTrader), 1 ether);
+
+        uint256 initialOwnerBalance = IERC20(WETH_ADDRESS).balanceOf(owner);
+        //uint256 initialContractBalance = virtualTrader.getBalance(WETH_ADDRESS);
+
+        virtualTrader.withdrawToken(WETH_ADDRESS, 1 ether);
+        vm.stopPrank();
+
+        assertEq(virtualTrader.getBalance(WETH_ADDRESS), 0);
+        assertEq(IERC20(WETH_ADDRESS).balanceOf(owner), initialOwnerBalance + 1 ether);
+    }
+
+    function test_OnlyOwnerCanWithdrawTokens() public {
+        vm.prank(user);
+        vm.expectRevert(VirtualTrader.VirtualTrader__OnlyOwnerCanCallThisFunction.selector);
+        virtualTrader.withdrawToken(WETH_ADDRESS, 1 ether);
+    }
 }

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -8,10 +9,12 @@ contract VirtualTrader {
     error VirtualTrader__WithdrawTransferFailed();
     error VirtualTrader__WithdrawTokenTransferFailed();
 
-    address public owner;
+    uint256 private constant MIN_VIRTUAL_BALANCE = 50 ether;
     address private bondingAddress;
     address private frouterAddress;
     address private virtualToken;
+
+    address public owner;
 
     constructor(address _bondingAddress, address _frouterAddress, address _virtualToken) {
         owner = msg.sender;
@@ -28,7 +31,7 @@ contract VirtualTrader {
     }
 
     function buy(address tokenAddress, uint256 amountIn) external onlyOwner {
-        // Approve virtual token spending
+        // Approve virtual token spending with a higher amount to account for potential fees
         IERC20(virtualToken).approve(frouterAddress, amountIn);
 
         // Execute buy through bonding contract
@@ -41,22 +44,27 @@ contract VirtualTrader {
 
         // Execute sell through bonding contract
         Bonding(bondingAddress).sell(amountIn, tokenAddress);
+
+        // Check if the virtual balance is above the minimum threshold then send the extra to the owner
+        if (getBalance(virtualToken) > MIN_VIRTUAL_BALANCE) {
+            withdrawToken(virtualToken, getBalance(virtualToken) - MIN_VIRTUAL_BALANCE);
+        }
     }
 
     // For withdrawing native ETH/BASE
     function withdraw() public payable onlyOwner {
-        (bool success,) = owner.call{value: address(this).balance}("");
+        (bool success,) = payable(owner).call{value: address(this).balance}("");
         if (!success) revert VirtualTrader__WithdrawTransferFailed();
     }
 
     // For withdrawing specific ERC20 tokens
-    function withdrawToken(address token, uint256 amount) external onlyOwner {
-        bool success = IERC20(token).transfer(owner, amount);
+    function withdrawToken(address token, uint256 amount) public onlyOwner {
+        bool success = IERC20(token).transfer(payable(owner), amount);
         if (!success) revert VirtualTrader__WithdrawTokenTransferFailed();
     }
 
     // Helper view function to check balances
-    function getBalance(address token) external view returns (uint256) {
+    function getBalance(address token) public view returns (uint256) {
         return IERC20(token).balanceOf(address(this));
     }
 }
