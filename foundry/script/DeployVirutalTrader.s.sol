@@ -12,10 +12,9 @@ contract DeployVirtualTrader is Script {
     function run() external returns (VirtualTrader, HelperConfig) {
         // Get the network config
         config = new HelperConfig();
-        (address virtualToken, address bondingAddress, address frouterAddress, uint256 deployerKey) =
-            config.activeNetworkConfig();
+        (address virtualToken, address bondingAddress, address frouterAddress,) = config.activeNetworkConfig();
 
-        vm.startBroadcast(deployerKey);
+        vm.startBroadcast();
         virtualTrader = new VirtualTrader(bondingAddress, frouterAddress, virtualToken);
         vm.stopBroadcast();
         return (virtualTrader, config);
