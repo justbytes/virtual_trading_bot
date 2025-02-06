@@ -9,8 +9,8 @@ const {
   BASE_MAINNET,
   FFACTORY_ADDRESS,
   FFACTORY_INTERFACE,
-  FPAIR_INTERFACE,
   VIRTUAL_TOKEN_ADDRESS,
+  VIRTUAL_TRADER_ADDRESS,
 } = require("./utils/config");
 
 // Import helper functions
@@ -27,7 +27,8 @@ const {
 } = require("./scripts/listeners");
 
 class App {
-  constructor() {
+  constructor(virtualTrader) {
+    this.virtualTrader = virtualTrader;
     this.unhandledAgents = new Map();
     this.activeTrades = new Map();
     this.pairs = new Map();
@@ -89,7 +90,6 @@ class App {
 
   buyToken(tokenAddress, pairAddress, targetPrice, stopLoss) {
     console.log("Buying token");
-    // TODO: run the mox run buy python script
 
     // Set the target price listener
     activateTargetPriceListener(
@@ -135,21 +135,34 @@ class App {
     const normalizedMarketCap =
       (agent.data.marketCap / 10 ** 18) * virtualPrice;
     console.log("Normalized market cap: ", normalizedMarketCap);
-    if (normalizedMarketCap < 30000) {
-      // Get current price set target price (increase of 20%) and buy
-      const currentPrice = agent.data.price;
-      const targetPrice = currentPrice * 1.1; // 10% increase
-      const stopLoss = currentPrice - currentPrice * 0.6; // 60% decrease
 
-      console.log("Target price: ", targetPrice);
-      console.log("Current price: ", currentPrice);
-      console.log("Stop loss: ", stopLoss);
+    // Get current price set target price (increase of 20%) and buy
+    const currentPrice = agent.data.price;
+    const targetPrice = currentPrice * 1.1; // 10% increase
+    const stopLoss = currentPrice - currentPrice * 0.6; // 60% decrease
 
-      // Buy the token
-      this.buyToken(tokenAddress, pairAddress, targetPrice, stopLoss);
-    } else {
-      console.log("Market cap is too high", normalizedMarketCap);
-    }
+    console.log("Target price: ", targetPrice);
+    console.log("Current price: ", currentPrice);
+    console.log("Stop loss: ", stopLoss);
+
+    // Buy the token
+    this.buyToken(tokenAddress, pairAddress, targetPrice, stopLoss);
+
+    // if (normalizedMarketCap < 30000) {
+    //   // Get current price set target price (increase of 20%) and buy
+    //   const currentPrice = agent.data.price;
+    //   const targetPrice = currentPrice * 1.1; // 10% increase
+    //   const stopLoss = currentPrice - currentPrice * 0.6; // 60% decrease
+
+    //   console.log("Target price: ", targetPrice);
+    //   console.log("Current price: ", currentPrice);
+    //   console.log("Stop loss: ", stopLoss);
+
+    //   // Buy the token
+    //   this.buyToken(tokenAddress, pairAddress, targetPrice, stopLoss);
+    // } else {
+    //   console.log("Market cap is too high", normalizedMarketCap);
+    // }
   }
 
   // ** SOON TO BE IMPLEMENTED **

@@ -5,6 +5,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Bonding} from "./virt_contracts/Bonding.sol";
 
 contract VirtualTrader {
+    error VirtualTrader__BuyFailed();
     error VirtualTrader__OnlyOwnerCanCallThisFunction();
     error VirtualTrader__WithdrawTransferFailed();
     error VirtualTrader__WithdrawTokenTransferFailed();
@@ -23,6 +24,8 @@ contract VirtualTrader {
         virtualToken = _virtualToken;
     }
 
+    receive() external payable {}
+
     modifier onlyOwner() {
         if (msg.sender != owner) {
             revert VirtualTrader__OnlyOwnerCanCallThisFunction();
@@ -30,12 +33,14 @@ contract VirtualTrader {
         _;
     }
 
-    function buy(address tokenAddress, uint256 amountIn) external onlyOwner {
+    function buy(address tokenAddress, uint256 amountIn) external onlyOwner returns (bool) {
         // Approve virtual token spending with a higher amount to account for potential fees
         IERC20(virtualToken).approve(frouterAddress, amountIn);
 
         // Execute buy through bonding contract
-        Bonding(bondingAddress).buy(amountIn, tokenAddress);
+        bool success = Bonding(bondingAddress).buy(amountIn, tokenAddress);
+        if (!success) revert VirtualTrader__BuyFailed();
+        return success;
     }
 
     function sell(address tokenAddress, uint256 amountIn) external onlyOwner {

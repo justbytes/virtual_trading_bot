@@ -70,7 +70,7 @@ const getAgents = async (pairs) => {
 
       // Get the agent info with retry
       tokenInfo = await retryOperation(
-        async () => getTokenInfo(ferc20),
+        async () => getAgentInfo(ferc20),
         `Error getting agent info for pair ${i}`
       );
 
