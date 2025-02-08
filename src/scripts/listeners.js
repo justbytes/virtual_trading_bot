@@ -67,7 +67,7 @@ const activateTargetPriceListener = (
   console.log("Activating target price listener");
   const filter = {
     address: pairAddress,
-    topics: [FPAIR_INTERFACE.getEvent("Swap").topicHash],
+    topics: [FPAIR_INTERFACE.getEvent("Transfer").topicHash],
   };
 
   const listener = async (log) => {
