@@ -79,33 +79,115 @@ class App {
     return this.saveInterval;
   }
 
-  sellToken(tokenAddress) {
-    console.log("Selling token");
-    // TODO: run the mox run sell python script
+  async sellToken(tokenAddress) {
+    try {
+      const amount = await this.virtualTrader.getBalance(tokenAddress);
 
-    // Remove the token from the active trades
-    this.activeTrades.delete(tokenAddress);
-    console.log("| Selling |Active trades: ", this.activeTrades.size);
+      if (!amount) {
+        console.log("No balance found for token");
+        return false;
+      }
+
+      console.log("Amount to sell: ", amount.toString());
+      const success = await this.virtualTrader.sell(tokenAddress, amount);
+
+      if (success) {
+        console.log("Token was successfully sold");
+        // Remove the token from the active trades
+        this.activeTrades.delete(tokenAddress);
+        console.log("Active trades: ", this.activeTrades.size);
+        return true;
+      } else {
+        console.log("Failed to sell token");
+        return false;
+      }
+    } catch (error) {
+      console.error("Error in sellToken:", error.message);
+      return false;
+    }
   }
 
-  buyToken(tokenAddress, pairAddress, targetPrice, stopLoss) {
-    console.log("Buying token");
+  async buyToken(tokenAddress, pairAddress, targetPrice, stopLoss) {
+    try {
+      // Get 1/4 of the total virtual tokens to trade with
+      const amount = await this.getAmountToTrade();
+      console.log("Amount to trade: ", amount);
 
-    // Set the target price listener
-    activateTargetPriceListener(
-      this,
-      targetPrice,
-      pairAddress,
-      tokenAddress,
-      stopLoss
-    );
+      // If the amount is false its because we have too many active trades or we have no money
+      if (!amount) {
+        console.log("Could not determine amount to trade");
+        return false;
+      }
 
-    // Add to active trades Map
-    this.activeTrades.set(tokenAddress, {
-      target: targetPrice,
-      stopLoss: stopLoss,
-    });
-    console.log("| Buying |Active trades: ", this.activeTrades.size);
+      const success = await this.virtualTrader.buy(tokenAddress, amount);
+
+      if (!success) {
+        console.log("Failed to buy token");
+        return false;
+      }
+
+      // Do a quick check to see if the price hit the target price
+      const tokenInfo = await agentTokenInfo(tokenAddress);
+
+      if (!tokenInfo) {
+        console.log(
+          "There was an error getting the token info on the target price listener.\nClosing current position"
+        );
+        await this.sellToken(tokenAddress);
+        return false;
+      }
+
+      if (tokenInfo.data.price >= targetPrice) {
+        console.log("Target price hit!");
+        await this.sellToken(tokenAddress);
+        return true;
+      }
+
+      // Set the target price listener
+      activateTargetPriceListener(
+        this,
+        targetPrice,
+        pairAddress,
+        tokenAddress,
+        stopLoss
+      );
+
+      // Add to active trades Map
+      this.activeTrades.set(tokenAddress, {
+        target: targetPrice,
+        stopLoss: stopLoss,
+      });
+      console.log("Active trades: ", this.activeTrades.size);
+      return true;
+    } catch (error) {
+      console.error("Error in buyToken:", error.message);
+      return false;
+    }
+  }
+
+  async getAmountToTrade() {
+    // Virtual Trader Contract only a maximum of 50 virtual tokens and sends the extra to the owner wallet.
+    // We will only allow 4 active trades allocating 1/4 of the total tokens to each trade
+
+    if (this.activeTrades.size >= 4) {
+      console.log("Maximum number of active trades reached");
+      return false;
+    }
+
+    const balance = await this.virtualTrader.getBalance(VIRTUAL_TOKEN_ADDRESS);
+
+    // Convert from wei to regular units (assuming 18 decimals)
+    const normalizedBalance = Number(balance) / Number(10n ** 18n);
+
+    // If the balance is less than 0.5, we will not trade
+    if (normalizedBalance < 0.5) {
+      console.log("All of your money is gone you fool!");
+      return false;
+    }
+
+    const amount = normalizedBalance * 0.25; // Always take 25% of total balance
+    // Convert back to wei for contract interaction
+    return BigInt(Math.floor(amount * Number(10n ** 18n)));
   }
 
   async handleLaunchedAgent(pairAddress, tokenAddress) {
@@ -119,6 +201,8 @@ class App {
 
     if (!agent) {
       console.log("Agent not found");
+      console.log("");
+
       this.unhandledAgents.set(pairAddress, tokenAddress);
       return;
     }
@@ -134,20 +218,22 @@ class App {
     const virtualPrice = await this.getVirtualTokenPrice();
     const normalizedMarketCap =
       (agent.data.marketCap / 10 ** 18) * virtualPrice;
-    console.log("Normalized market cap: ", normalizedMarketCap);
 
     // Get current price set target price (increase of 20%) and buy
     const currentPrice = agent.data.price;
-    const targetPrice = currentPrice * 1.1; // 10% increase
-    const stopLoss = currentPrice - currentPrice * 0.6; // 60% decrease
+    const targetPrice = currentPrice * 1.2; // 20% increase
+    const stopLoss = currentPrice - currentPrice * 0.4; // 40% decrease
 
+    console.log("Normalized market cap: ", normalizedMarketCap);
     console.log("Target price: ", targetPrice);
     console.log("Current price: ", currentPrice);
     console.log("Stop loss: ", stopLoss);
+    console.log("");
 
     // Buy the token
     this.buyToken(tokenAddress, pairAddress, targetPrice, stopLoss);
 
+    // THis seemed unnessary
     // if (normalizedMarketCap < 30000) {
     //   // Get current price set target price (increase of 20%) and buy
     //   const currentPrice = agent.data.price;
@@ -218,20 +304,14 @@ class App {
   }
 
   addPair(pair) {
-    console.log("New pair added");
-
     this.pairs.set(pair);
   }
 
   addPrototype(tokenInfo) {
-    console.log("New prototype added");
-
     this.prototypes.set(tokenInfo.token, tokenInfo);
   }
 
   addSentient(tokenInfo) {
-    console.log("New sentient added");
-
     this.sentients.set(tokenInfo.token, tokenInfo);
   }
 }
