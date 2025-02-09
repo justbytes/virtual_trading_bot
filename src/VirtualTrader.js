@@ -194,15 +194,34 @@ class VirtualTrader {
           `Executing withdrawToken (Attempt ${attempt}/${retryCount})`
         );
 
+        // Convert amount to BigInt if it isn't already
+        const amountBigInt = BigInt(amount.toString());
+
+        // Get gas estimate and convert to BigInt
+        const gasEstimate =
+          await this.virtualTraderContract.estimateGas.withdrawToken(
+            token,
+            amountBigInt
+          );
+        const gasEstimateBigInt = BigInt(gasEstimate.toString());
+
+        // Get current gas prices from network
+        const { maxFeePerGas, maxPriorityFeePerGas } =
+          await this.provider.getFeeData();
+
+        // Add 20% buffer to gas estimate for safety
+        const gasLimit = (gasEstimateBigInt * 120n) / 100n;
+
         const tx = await this.virtualTraderContract.withdrawToken(
           token,
-          amount,
+          amountBigInt,
           {
-            gasLimit: 300000n,
-            maxPriorityFeePerGas: 100000000n,
-            maxFeePerGas: 1000000000n,
+            gasLimit,
+            maxFeePerGas: BigInt(maxFeePerGas.toString()),
+            maxPriorityFeePerGas: BigInt(maxPriorityFeePerGas.toString()),
           }
         );
+
         await tx.wait();
         console.log("WithdrawToken transaction successful");
         return true;

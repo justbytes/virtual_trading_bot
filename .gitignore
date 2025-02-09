@@ -2,7 +2,7 @@
 node_modules/
 
 # Virtual data
-virtual_data/
+virtual-protocol-contracts/
 
 # Environments
 .env
