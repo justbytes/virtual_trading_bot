@@ -10,6 +10,7 @@ const {
   FFACTORY_ADDRESS,
   FFACTORY_INTERFACE,
   VIRTUAL_TOKEN_ADDRESS,
+  WALLET_ADDRESS,
   VIRTUAL_TRADER_ADDRESS,
 } = require("./utils/config");
 
@@ -46,18 +47,18 @@ class App {
     this.sentients = sentients;
 
     // Get current list of pairs from ffactory
-    const pairsLength = await this.getAllPairsLength();
+    // const pairsLength = await this.getAllPairsLength();
 
-    if (pairsLength > this.pairs.size) {
-      console.log(`${Number(pairsLength) - this.pairs.size} pairs to process`);
-      await updateAgentLists(this, this.pairs.size, pairsLength);
-    } else {
-      console.log("No new pairs to process");
-    }
+    // if (pairsLength > this.pairs.size) {
+    //   console.log(`${Number(pairsLength) - this.pairs.size} pairs to process`);
+    //   await updateAgentLists(this, this.pairs.size, pairsLength);
+    // } else {
+    //   console.log("No new pairs to process");
+    // }
 
-    activateLaunchedListener(this);
+    // activateLaunchedListener(this);
     // TODO: Activate a listener for each prototype that checks the market cap after a transfer / swap to find 95%+ tokens
-    this.autoSave();
+    // this.autoSave();
     return this;
   }
 
@@ -81,7 +82,10 @@ class App {
 
   async sellToken(tokenAddress) {
     try {
-      const amount = await this.virtualTrader.getBalance(tokenAddress);
+      const amount = await alchemy.core.getTokenBalances(WALLET_ADDRESS, [
+        tokenAddress,
+      ]);
+      // const amount = await this.virtualTrader.getBalance(tokenAddress);
 
       if (!amount) {
         console.log("No balance found for token");
@@ -120,6 +124,7 @@ class App {
       }
 
       const success = await this.virtualTrader.buy(tokenAddress, amount);
+      console.log("BUY was a success");
 
       if (!success) {
         console.log("Failed to buy token");
@@ -174,7 +179,12 @@ class App {
       return false;
     }
 
-    const balance = await this.virtualTrader.getBalance(VIRTUAL_TOKEN_ADDRESS);
+    const balance = await alchemy.core.getTokenBalances(WALLET_ADDRESS, [
+      VIRTUAL_TOKEN_ADDRESS,
+    ]);
+    console.log("BUYING: VIRT BALANCE ", balance);
+
+    //const balance = await this.virtualTrader.getBalance(VIRTUAL_TOKEN_ADDRESS);
 
     // Convert from wei to regular units (assuming 18 decimals)
     const normalizedBalance = Number(balance) / Number(10n ** 18n);

@@ -5,14 +5,11 @@ const main = async () => {
   // Initialize the app
   const virtualTrader = await new VirtualTrader().initialize();
   const app = await new App(virtualTrader).initialize();
-  let balance = await app.virtualTrader.getBalance(
-    "0x0b3e328455c4059EEb9e3f84b5543F74E24e7E1b"
-  );
+
+  const amount = 1e18;
+
   // TODO: Create the interactive CLI
-  app.virtualTrader.withdrawToken(
-    "0x0b3e328455c4059EEb9e3f84b5543F74E24e7E1b",
-    balance
-  );
+  app.virtualTrader.buy("0x0A32C7fc74A35a9BFd99623C2aF309BB9469733E", amount);
 };
 
 main().catch(console.error);
