@@ -1,11 +1,11 @@
-const { Alchemy, Contract, Wallet } = require("alchemy-sdk");
-const { ethers } = require("ethers");
-const util = require("util");
-const { exec } = require("child_process");
+const { Contract, Wallet } = require('alchemy-sdk');
+const util = require('util');
+const { exec } = require('child_process');
 const execPromise = util.promisify(exec);
 
 const {
-  UNSAFE_PASSWORD_FILE,
+  CAST_WALLET_PASSWORD,
+  CAST_WALLET_NAME,
   VIRTUAL_TRADER_ADDRESS,
   BASE_MAINNET,
   VIRTUAL_TRADER_ABI,
@@ -13,45 +13,52 @@ const {
   BONDING_ABI,
   VIRTUAL_TOKEN_ABI,
   VIRTUAL_TOKEN_ADDRESS,
-} = require("./utils/config");
+} = require('./utils/config');
 
-// Set the alchemy provider to the Base mainnet
-const alchemy = new Alchemy(BASE_MAINNET);
-console.log("BONDING_ADDRESS", BONDING_ADDRESS);
-
+/**
+ * This class buys and sells tokens on the Virtuals Protocol bonding curve
+ */
 class VirtualTrader {
-  constructor() {
+  /**
+   * Constructor initialize class varaibles
+   */
+  constructor(alchemy) {
+    this.alchemy = alchemy;
     this.signer = null;
     this.virtualTraderContract = null;
     this.provider = null;
     this.currentNonce = null;
   }
 
+  /**
+   * Initialize provider, signer, nonce, and virtual trading contract(currently used)
+   */
   async initialize() {
     // Get provider first
-    this.provider = await alchemy.config.getProvider();
+    this.provider = await this.alchemy.config.getProvider();
 
     // Get signer and connect it to provider
     this.signer = await this.getSigner();
 
     // Initialize the nonce
-    this.currentNonce = await this.provider.getTransactionCount(
-      this.signer.address,
-      "latest"
-    );
+    this.currentNonce = await this.provider.getTransactionCount(this.signer.address, 'latest');
 
     // Create contract instance
-    // this.virtualTraderContract = new Contract(
-    //   VIRTUAL_TRADER_ADDRESS,
-    //   VIRTUAL_TRADER_ABI,
-    //   this.signer
-    // );
+    this.virtualTraderContract = new Contract(
+      VIRTUAL_TRADER_ADDRESS,
+      VIRTUAL_TRADER_ABI,
+      this.signer
+    );
 
     return this;
   }
 
+  /**
+   * Creats a wallet/signer instance using the cast wallet
+   */
   async getSigner() {
-    let command = `cast wallet decrypt-keystore virty --unsafe-password "${UNSAFE_PASSWORD_FILE}"`;
+    // Runs the cast wallet command to get the private key for the trading wallet
+    let command = `cast wallet decrypt-keystore ${CAST_WALLET_NAME} --unsafe-password "${CAST_WALLET_PASSWORD}"`;
 
     // Execute the command
     const { stdout, stderr } = await execPromise(command);
@@ -60,18 +67,17 @@ class VirtualTrader {
     }
 
     // The private key is returned in the stdout
-    const privateKey = stdout.slice(24).trim();
+    const privateKey = stdout.slice(26).trim();
 
-    return new Wallet(privateKey, alchemy);
+    return new Wallet(privateKey, this.alchemy);
   }
 
+  /**
+   * Buy the tokens on the Virtuals Protocol bonding curve
+   */
   async buy(token, amount) {
     try {
-      const bondingContract = new Contract(
-        BONDING_ADDRESS,
-        BONDING_ABI,
-        this.signer
-      );
+      const bondingContract = new Contract(BONDING_ADDRESS, BONDING_ABI, this.signer);
 
       // Create ERC20 token contract instance
       const tokenContract = new Contract(token, VIRTUAL_TOKEN_ABI, this.signer);
@@ -86,7 +92,7 @@ class VirtualTrader {
         nonce: approveNonce,
       });
       await approveTx.wait();
-      console.log("Approved");
+      console.log('Approved');
 
       // Get fresh nonce for buy transaction
       const buyNonce = this.currentNonce++;
@@ -100,34 +106,30 @@ class VirtualTrader {
       return receipt.status === 1;
     } catch (error) {
       // If there's an error, refresh the nonce
-      this.currentNonce = await this.provider.getTransactionCount(
-        this.signer.address,
-        "latest"
-      );
-      console.log("There was an error when buying: ", error);
-      console.log("");
+      this.currentNonce = await this.provider.getTransactionCount(this.signer.address, 'latest');
+      console.log('There was an error when buying: ', error);
+      console.log('');
       return false;
     }
   }
 
+  /**
+   * Sell the tokens on the Virutals Protocol bonding curve
+   */
   async sell(token, amount) {
     try {
-      const bondingContract = new Contract(
-        BONDING_ADDRESS,
-        BONDING_ABI,
-        this.signer
-      );
+      const bondingContract = new Contract(BONDING_ADDRESS, BONDING_ABI, this.signer);
 
       const success = await bondingContract.sell.call(amount, token);
       if (!success) {
-        console.log("Transaction Failed");
+        console.log('Transaction Failed');
         return false;
       }
 
       return success;
     } catch (error) {
-      console.log("There was an error when buying: ", error);
-      console.log("");
+      console.log('There was an error when buying: ', error);
+      console.log('');
     }
   }
 

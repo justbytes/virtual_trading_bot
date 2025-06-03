@@ -14,7 +14,6 @@ contract VirtualTrader {
     address private bondingAddress;
     address private frouterAddress;
     address private virtualToken;
-
     address public owner;
 
     constructor(address _bondingAddress, address _frouterAddress, address _virtualToken) {
