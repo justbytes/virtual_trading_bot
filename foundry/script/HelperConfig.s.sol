@@ -18,7 +18,7 @@ contract HelperConfig is Script {
     }
 
     constructor() {
-        activeNetworkConfig = getBaseMainnetConfig();
+        activeNetworkConfig = getOrCreateAnvilConfig();
     }
 
     // constructor() {
@@ -29,21 +29,21 @@ contract HelperConfig is Script {
     //     }
     // }
 
-    function getBaseMainnetConfig() public view returns (NetworkConfig memory) {
-        return NetworkConfig({
-            virtualTokenAddress: 0x0b3e328455c4059EEb9e3f84b5543F74E24e7E1b,
-            bondingAddress: 0xF66DeA7b3e897cD44A5a231c61B6B4423d613259,
-            frouterAddress: 0x8292B43aB73EfAC11FAF357419C38ACF448202C5,
-            deployerKey: vm.envUint("VIRT_KEY_ADDRESS")
-        });
-    }
-
-    // function getOrCreateAnvilConfig() public view returns (NetworkConfig memory) {
+    // function getBaseMainnetConfig() public view returns (NetworkConfig memory) {
     //     return NetworkConfig({
     //         virtualTokenAddress: 0x0b3e328455c4059EEb9e3f84b5543F74E24e7E1b,
     //         bondingAddress: 0xF66DeA7b3e897cD44A5a231c61B6B4423d613259,
     //         frouterAddress: 0x8292B43aB73EfAC11FAF357419C38ACF448202C5,
-    //         deployerKey: vm.envUint("ANVIL_KEY_ADDRESS")
+    //         deployerKey: vm.envUint("WALLET_ADDRESS")
     //     });
     // }
+
+    function getOrCreateAnvilConfig() public view returns (NetworkConfig memory) {
+        return NetworkConfig({
+            virtualTokenAddress: 0x0b3e328455c4059EEb9e3f84b5543F74E24e7E1b,
+            bondingAddress: 0xF66DeA7b3e897cD44A5a231c61B6B4423d613259,
+            frouterAddress: 0x8292B43aB73EfAC11FAF357419C38ACF448202C5,
+            deployerKey: vm.envUint("ANVIL_KEY_ADDRESS")
+        });
+    }
 }

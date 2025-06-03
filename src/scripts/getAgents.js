@@ -1,8 +1,8 @@
-const { Alchemy } = require("alchemy-sdk");
-const ethers = require("ethers");
-const fs = require("fs");
+const { Alchemy } = require('alchemy-sdk');
+const ethers = require('ethers');
+const fs = require('fs');
 
-const { getAgentInfo } = require("../scripts/getAgentInfo");
+const { getAgentInfo } = require('../scripts/getAgentInfo');
 
 const {
   BASE_MAINNET,
@@ -11,15 +11,19 @@ const {
   PROTOTYPES_ARCHIVE_FILE,
   SENTIENTS_ARCHIVE_FILE,
   PAIRS_ARCHIVE_FILE,
-} = require("../utils/config");
+} = require('../utils/config');
 
-const getAgents = async (pairs) => {
+/**
+ * Function that gets the agents
+ */
+const getAgents = async pairs => {
   // Create Alchemy instance
   const alchemy = new Alchemy(BASE_MAINNET);
   const prototypes = [];
   const sentients = [];
   let ferc20, pair, tokenInfo;
 
+  // Calls the function with retry logic
   const retryOperation = async (operation, errorMessage, maxRetries = 5) => {
     let retry = 0;
     while (retry < maxRetries) {
@@ -32,9 +36,7 @@ const getAgents = async (pairs) => {
           throw new Error(`${errorMessage} after ${maxRetries} attempts`);
         }
         // Exponential backoff
-        await new Promise((resolve) =>
-          setTimeout(resolve, Math.pow(2, retry) * 1000)
-        );
+        await new Promise(resolve => setTimeout(resolve, Math.pow(2, retry) * 1000));
       }
     }
   };
@@ -45,11 +47,7 @@ const getAgents = async (pairs) => {
       // Create pair contract instance with retry
       pair = await retryOperation(
         async () =>
-          new ethers.Contract(
-            pairs[i],
-            FPAIR_INTERFACE,
-            await alchemy.config.getProvider()
-          ),
+          new ethers.Contract(pairs[i], FPAIR_INTERFACE, await alchemy.config.getProvider()),
         `Error creating pair contract instance for pair ${i}`
       );
 
@@ -62,10 +60,7 @@ const getAgents = async (pairs) => {
       // Get tokenB if needed, with retry
       ferc20 =
         tokenA === VIRTUAL_TOKEN_ADDRESS
-          ? await retryOperation(
-              async () => pair.tokenB(),
-              `Error getting tokenB for pair ${i}`
-            )
+          ? await retryOperation(async () => pair.tokenB(), `Error getting tokenB for pair ${i}`)
           : tokenA;
 
       // Get the agent info with retry
@@ -90,25 +85,20 @@ const getAgents = async (pairs) => {
   return { prototypes, sentients };
 };
 
+/**
+ * Gets all of the  agents and sorts them into prototype or sentient
+ */
 const main = async () => {
   // Get the current pairs
-  const pairs = JSON.parse(fs.readFileSync(PAIRS_ARCHIVE_FILE, "utf8"));
+  const pairs = JSON.parse(fs.readFileSync(PAIRS_ARCHIVE_FILE, 'utf8'));
 
   // Use the pairs to seperate the agents into prototypes and sentients
   const agents = await getAgents(pairs);
 
   // Save the agents to the appropriate files
-  fs.writeFileSync(
-    SENTIENTS_ARCHIVE_FILE,
-    JSON.stringify(agents.sentients, null, 2),
-    "utf8"
-  );
+  fs.writeFileSync(SENTIENTS_ARCHIVE_FILE, JSON.stringify(agents.sentients, null, 2), 'utf8');
 
-  fs.writeFileSync(
-    PROTOTYPES_ARCHIVE_FILE,
-    JSON.stringify(agents.prototypes, null, 2),
-    "utf8"
-  );
+  fs.writeFileSync(PROTOTYPES_ARCHIVE_FILE, JSON.stringify(agents.prototypes, null, 2), 'utf8');
 
   console.log(
     `Agents are seperated and saved to file Saved: ${

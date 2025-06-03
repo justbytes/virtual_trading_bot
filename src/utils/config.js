@@ -1,6 +1,7 @@
-require("dotenv").config();
-const { Network } = require("alchemy-sdk");
-const { ethers } = require("ethers");
+require('dotenv').config();
+const { Network } = require('alchemy-sdk');
+const { ethers } = require('ethers');
+const path = require('path');
 
 /**
  * @description This file is used to store / manage constant values like
@@ -10,20 +11,20 @@ const { ethers } = require("ethers");
 /*//////////////////////////////////////////////////////////////
                            CONTRACT ADDRESSES
 //////////////////////////////////////////////////////////////*/
-const VIRTUAL_TOKEN_ADDRESS = process.env.VIRTUAL_TOKEN_ADDRESS;
-const FFACTORY_ADDRESS = process.env.FFACTORY_ADDRESS;
-const BONDING_ADDRESS = process.env.BONDING_ADDRESS;
-const FROUTER_ADDRESS = process.env.FROUTER_ADDRESS;
-const VIRTUAL_TRADER_ADDRESS = process.env.VIRTUAL_TRADER_ADDRESS;
+const VIRTUAL_TOKEN_ADDRESS = '0x0b3e328455c4059eeb9e3f84b5543f74e24e7e1b';
+const FFACTORY_ADDRESS = '0x158d7CcaA23DC3c8861c3323eD546E3d25e74309';
+const BONDING_ADDRESS = '0xF66DeA7b3e897cD44A5a231c61B6B4423d613259';
+const FROUTER_ADDRESS = '0x83358384d0c96db98dca34b9c0527f567ceee5e9';
+const VIRTUAL_TRADER_ADDRESS = '0x585f75d428C74094D4e547D9ef2b1b1B2eCD40Be';
 /*//////////////////////////////////////////////////////////////
                              CONTRACT ABIS
 //////////////////////////////////////////////////////////////*/
-const BONDING_ABI = require("../../abis/Bonding.json");
-const VIRTUAL_TOKEN_ABI = require("../../abis/VirtualToken.json");
-const FFACTORY_ABI = require("../../abis/FFactory.json");
-const FPAIR_ABI = require("../../abis/FPair.json");
-const FERC20_ABI = require("../../abis/FERC20.json");
-const VIRTUAL_TRADER_ABI = require("../../abis/VirtualTrader.json");
+const BONDING_ABI = require('../../abis/Bonding.json');
+const VIRTUAL_TOKEN_ABI = require('../../abis/VirtualToken.json');
+const FFACTORY_ABI = require('../../abis/FFactory.json');
+const FPAIR_ABI = require('../../abis/FPair.json');
+const FERC20_ABI = require('../../abis/FERC20.json');
+const VIRTUAL_TRADER_ABI = require('../../abis/VirtualTrader.json');
 /*//////////////////////////////////////////////////////////////
                           CONTRACT INTERFACES
 //////////////////////////////////////////////////////////////*/
@@ -44,23 +45,38 @@ const BASE_MAINNET = {
 /*//////////////////////////////////////////////////////////////
                              DATA ARCHIVES
 //////////////////////////////////////////////////////////////*/
-const PROTOTYPES_ARCHIVE_FILE = process.env.PROTOTYPES_ARCHIVE_FILE;
-const SENTIENTS_ARCHIVE_FILE = process.env.SENTIENTS_ARCHIVE_FILE;
-const PAIRS_ARCHIVE_FILE = process.env.PAIRS_ARCHIVE_FILE;
+const findProjectRoot = () => {
+  let currentDir = __dirname;
+  while (currentDir !== path.parse(currentDir).root) {
+    try {
+      require(path.join(currentDir, 'package.json'));
+      return currentDir;
+    } catch (e) {
+      currentDir = path.dirname(currentDir);
+    }
+  }
+  // Fallback to going up from src/utils to project root
+  return path.resolve(__dirname, '../..');
+};
 
-const UNSAFE_PASSWORD_FILE = process.env.UNSAFE_PASSWORD_FILE;
+const PROJECT_ROOT = findProjectRoot();
 
-// wallet address
-const WALLET_ADDRESS = process.env.VIRT_KEY_ADDRESS;
+const PROTOTYPES_ARCHIVE_FILE = path.join(PROJECT_ROOT, 'data', 'prototypes.json');
+const SENTIENTS_ARCHIVE_FILE = path.join(PROJECT_ROOT, 'data', 'sentients.json');
+const PAIRS_ARCHIVE_FILE = path.join(PROJECT_ROOT, 'data', 'pairs.json');
 
-// File paths
-const KEYSTORE_FILE = process.env.KEYSTORE_FILE;
+/*//////////////////////////////////////////////////////////////
+                             WALLET
+//////////////////////////////////////////////////////////////*/
+const WALLET_ADDRESS = process.env.WALLET_ADDRESS;
+const CAST_WALLET_PASSWORD = process.env.CAST_WALLET_PASSWORD;
+const CAST_WALLET_NAME = process.env.CAST_WALLET_NAME;
 
 module.exports = {
   WALLET_ADDRESS,
   VIRTUAL_TRADER_ABI,
-  UNSAFE_PASSWORD_FILE,
-  KEYSTORE_FILE,
+  CAST_WALLET_PASSWORD,
+  CAST_WALLET_NAME,
   VIRTUAL_TRADER_INTERFACE,
   FERC20_INTERFACE,
   FERC20_ABI,

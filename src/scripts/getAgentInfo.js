@@ -1,5 +1,5 @@
-const { Alchemy } = require("alchemy-sdk");
-const ethers = require("ethers");
+const { Alchemy } = require('alchemy-sdk');
+const ethers = require('ethers');
 
 const {
   BASE_MAINNET,
@@ -7,11 +7,15 @@ const {
   FPAIR_INTERFACE,
   BONDING_ADDRESS,
   BONDING_INTERFACE,
-} = require("../utils/config");
+} = require('../utils/config');
 
+// Create an Alchemy provider
 const alchemy = new Alchemy(BASE_MAINNET);
 
-const formatTokenData = (prototype) => {
+/**
+ * Formats the token data
+ */
+const formatTokenData = prototype => {
   return {
     creator: prototype.creator,
     token: prototype.token,
@@ -43,7 +47,10 @@ const formatTokenData = (prototype) => {
   };
 };
 
-const agentTokenInfo = async (tokenAddress) => {
+/**
+ * Gets all of the token data
+ */
+const agentTokenInfo = async tokenAddress => {
   let agent;
 
   agent = await getTokenInfo(tokenAddress);
@@ -57,11 +64,8 @@ const agentTokenInfo = async (tokenAddress) => {
     const maxAttempts = 10; // Maximum number of retry attempts
     let attempts = 0; // Counter for the number of attempts
 
-    while (
-      (agent.data.price == 0 || agent.data.marketCap == 0) &&
-      attempts < maxAttempts
-    ) {
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // 1 second delay between attempts
+    while ((agent.data.price == 0 || agent.data.marketCap == 0) && attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay between attempts
       agent = await getTokenInfo(tokenAddress);
       attempts++;
     }
@@ -75,15 +79,14 @@ const agentTokenInfo = async (tokenAddress) => {
   return agent;
 };
 
-const getAgentInfoFromPair = async (pairAddress) => {
+/**
+ * gets the agent from a pair address
+ */
+const getAgentInfoFromPair = async pairAddress => {
   // Create pair contract instance with retry
   const pair = await retryOperation(
     async () =>
-      new ethers.Contract(
-        pairAddress,
-        FPAIR_INTERFACE,
-        await alchemy.config.getProvider()
-      ),
+      new ethers.Contract(pairAddress, FPAIR_INTERFACE, await alchemy.config.getProvider()),
     `Error creating pair contract instance for ${pairAddress}`
   );
 
@@ -105,7 +108,10 @@ const getAgentInfoFromPair = async (pairAddress) => {
   return getAgentInfo(ferc20);
 };
 
-const getTokenInfo = async (targetAddress) => {
+/**
+ * Gets the token infor from the bonding contract
+ */
+const getTokenInfo = async targetAddress => {
   const bonding = new ethers.Contract(
     BONDING_ADDRESS,
     BONDING_INTERFACE,
@@ -124,6 +130,9 @@ const getTokenInfo = async (targetAddress) => {
   return formatTokenData(rawTokenData);
 };
 
+/**
+ * Used for calling a function with retries
+ */
 const retryOperation = async (operation, errorMessage, maxRetries = 5) => {
   let retry = 0;
   while (retry < maxRetries) {
@@ -137,9 +146,7 @@ const retryOperation = async (operation, errorMessage, maxRetries = 5) => {
         return false;
       }
       // Exponential backoff
-      await new Promise((resolve) =>
-        setTimeout(resolve, Math.pow(2, retry) * 1000)
-      );
+      await new Promise(resolve => setTimeout(resolve, Math.pow(2, retry) * 1000));
     }
   }
 };

@@ -1,9 +1,7 @@
 .DS_Store
 node_modules/
 
-# Virtual data
-virtual-protocol-contracts/
-virtual_data/
+data/
 
 # Environments
 .env
