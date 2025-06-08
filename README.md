@@ -1,3 +1,5 @@
+![pump display banner](/assets/virtuals_banner.jpeg)
+
 # Virtuals Trading Bot
 
 The Virtuals Trading Bot is a trading bot that can be used to snipe tokens on the Virtuals Protocol bonding curve. It has event listeners for the `Launched` event that trigers a function that gets current prices, sets stop losses, price targets. In addition the Virtuals Trading Bot gathers all of the tokens that have been created via Virtuals Protocol which can then be indexed in the case you need want to track any specifics of tokens graduating or trades events.
