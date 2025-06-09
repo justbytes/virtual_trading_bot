@@ -4,7 +4,7 @@
 Algorithmic trading bot designed for the Virtuals Protocol bonding curve ecosystem on Base mainnet. The system employs real-time event monitoring to automatically detect newly launched tokens and execute trades with the ability to set custom risk management strategies.
 
 ## 🌐 Live Demo
-Currently in development - Bot available for deployment
+[Watch Demo](https://www.youtube.com/watch?v=3mpz4I8A5D4)
 
 ## ✨ Features
 **Real-time Token Detection**
